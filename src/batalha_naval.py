@@ -25,6 +25,7 @@ def menu_principal():
         print("||2 - Ver ranking                     ||")
         print("||3 - Ver Regras                      ||")
         print("||4 - Finalizar                       ||")
+        print("=" * 40)
         opcao = input("\nEscolha uma opção: ").strip()
 
         if opcao == "1":
@@ -41,7 +42,7 @@ def menu_principal():
             print("- antes que a sua seja destruída.")
             print("- Cada jogador tem seus navios escondidos na horizontal/vertical")
             print("- Os jogadores alternam tiros por coordenadas (ex: A-5),")
-            print("vencendo quem afundar todos os navios inimigos primeiro.")
+            print("- vencendo quem afundar todos os navios inimigos primeiro.")
             input("\nPressione Enter para voltar ao menu...")
         elif opcao == "4":
             print("Encerrando...")
@@ -52,10 +53,21 @@ def menu_principal():
 
 def jogar():
     print("=" * 40)
-    print("-----------{BATALHA NAVAL}-----------")
+    print("-----------=VAMOS A BATALHA=-----------")
     print("=" * 40)
+    print("||1 - Jogar contra o computador       ||")
+    print("||2 - Jogar contra outro jogador      ||")
+    print("||3 - Voltar ao menu                  ||")
 
-    jogador = input("\nNome do Jogador: ")
+    escolha = input("\nEscolha uma opção: ").strip()
+    if escolha == "1":
+        jogador = "Computador"
+    elif escolha == "2":
+        jogador1 = input("\nNome do Jogador 1: ")
+        jogador2 = input("Nome do Jogador 2: ")
+    else:
+        return
+    
     pontos = 0
     linhas = 10
     colunas = 10
