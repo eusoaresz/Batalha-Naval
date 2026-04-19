@@ -7,7 +7,7 @@ from colorama import Fore, Style, just_fix_windows_console
 just_fix_windows_console()
 
 temp = "🦣🦣🐪🐪🐯🐯🦓🦓🐢🐢🐋🐋🦜🦜🐧🐧"
-figuras = list(temp)   # converte a string para lista
+figuras = list(temp)
 def carregar_ranking():
     dados = []
     if os.path.isfile("ranking.txt"):
