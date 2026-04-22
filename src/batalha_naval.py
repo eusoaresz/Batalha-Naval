@@ -6,8 +6,9 @@ from colorama import Fore, Style, just_fix_windows_console
 # Habilita suporte a cores ANSI no console Windows (PowerShell/VS Code Terminal)
 just_fix_windows_console()
 
-temp = "🦣🦣🐪🐪🐯🐯🦓🦓🐢🐢🐋🐋🦜🦜🐧🐧"
-figuras = list(temp)
+# Frota com tamanho real de cada navio (1, 2, 3 e 4 casas)
+frota = [("🛥️", 1), ("⛴️", 2), ("🛳️", 3), ("🚢", 4)]
+
 def carregar_ranking():
     dados = []
     if os.path.isfile("ranking.txt"):
@@ -18,17 +19,18 @@ def carregar_ranking():
 def menu_principal():
     while True:
         os.system("cls")
-        print("=" * 40)
-        print("||----------{BATALHA NAVAL}-----------||")
-        print("=" * 40)
-        print("||1 - Iniciar jogo                    ||")
-        print("||2 - Ver ranking                     ||")
-        print("||3 - Ver Regras                      ||")
-        print("||4 - Finalizar                       ||")
-        print("=" * 40)
+        print(Fore.BLUE + "=" * 40 + Style.RESET_ALL)
+        print(Fore.YELLOW + "||" + Fore.RED + "----------{BATALHA NAVAL}-----------" + Style.RESET_ALL + Fore.YELLOW + "||")
+        print(Fore.BLUE + "=" * 40 + Style.RESET_ALL)
+        print(Fore.YELLOW + "||" + Fore.WHITE + "1 - Iniciar jogo                    " + Style.RESET_ALL + Fore.YELLOW + "||")
+        print(Fore.YELLOW + "||" + Fore.WHITE + "2 - Ver ranking                     " + Style.RESET_ALL + Fore.YELLOW + "||")
+        print(Fore.YELLOW + "||" + Fore.WHITE + "3 - Ver Regras                      " + Style.RESET_ALL + Fore.YELLOW + "||")
+        print(Fore.YELLOW + "||" + Fore.WHITE + "4 - Finalizar                       " + Style.RESET_ALL + Fore.YELLOW + "||")
+        print(Fore.BLUE + "=" * 40 + Style.RESET_ALL)
         opcao = input("\nEscolha uma opção: ").strip()
 
         if opcao == "1":
+            os.system("cls")
             jogar()
             input("\nPressione Enter para voltar ao menu...")
         elif opcao == "2":
@@ -52,19 +54,24 @@ def menu_principal():
             time.sleep(1)
 
 def jogar():
-    print("=" * 40)
-    print("-----------=VAMOS A BATALHA=-----------")
-    print("=" * 40)
-    print("||1 - Jogar contra o computador       ||")
-    print("||2 - Jogar contra outro jogador      ||")
-    print("||3 - Voltar ao menu                  ||")
+    print(Fore.BLUE + "=" * 40 + Style.RESET_ALL)
+    print(Fore.YELLOW + "||" + Fore.RED + "----------=VAMOS A BATALHA=---------" + Style.RESET_ALL + Fore.YELLOW + "||")
+    print(Fore.BLUE + "=" * 40 + Style.RESET_ALL)
+    print(Fore.YELLOW + "||" + Fore.WHITE + "1 - Jogar contra o computador       " + Style.RESET_ALL + Fore.YELLOW + "||")
+    print(Fore.YELLOW + "||" + Fore.WHITE + "2 - Jogar contra outro jogador      " + Style.RESET_ALL + Fore.YELLOW + "||")
+    print(Fore.YELLOW + "||" + Fore.WHITE + "3 - Voltar ao menu                  " + Style.RESET_ALL + Fore.YELLOW + "||")
+    print(Fore.BLUE + "=" * 40 + Style.RESET_ALL)
 
     escolha = input("\nEscolha uma opção: ").strip()
+    modo_dois_jogadores = False
     if escolha == "1":
         jogador = "Computador"
     elif escolha == "2":
-        jogador1 = input("\nNome do Jogador 1: ")
-        jogador2 = input("Nome do Jogador 2: ")
+        modo_dois_jogadores = True
+        jogador1 = input("\nNome do Jogador 1: ").strip() or "Player1"
+        jogador2 = input("Nome do Jogador 2: ").strip() or "Player2"
+        jogadores = [jogador1, jogador2]
+        pontos_jogadores = [0, 0]
     else:
         return
     
@@ -73,7 +80,6 @@ def jogar():
     colunas = 10
     letras_linhas = "ABCDEFGHIJ"
 
-    figuras_disponiveis = list(temp)
     jogo = []
     apostas = []
 
@@ -82,24 +88,31 @@ def jogar():
             jogo.append([])
             apostas.append([])
             for _ in range(colunas):
-                jogo[i].append(random.choice(figuras_disponiveis))
+                jogo[i].append("🌊")
                 apostas[i].append("🌊")
 
-    def mostra_tabuleiro():
-        os.system("cls")
-        print("   1   2   3   4   5   6   7   8   9  10")
-        for i in range(linhas):
-            print(letras_linhas[i], end="")
-            for j in range(colunas):
-                print(f" {jogo[i][j]} ", end="")
-            print("\n")
-        print("Memorize a posição dos bichos no tabuleiro...")
-        time.sleep(2)
+        # Garante navios horizontais e verticais no tabuleiro
+        orientacoes = ["H", "H", "V", "V"]
+        random.shuffle(orientacoes)
 
-        print("Contagem Regressiva: ", end="")
-        for i in range(10, 0, -1):
-            print(i, end=" ", flush=True)
-            time.sleep(1)
+        for indice, (navio, tamanho) in enumerate(frota):
+            orientacao = orientacoes[indice]
+            colocado = False
+
+            while not colocado:
+                x = random.randint(0, linhas - 1)
+                y = random.randint(0, colunas - 1)
+
+                if orientacao == "H":
+                    if y + tamanho <= colunas and all(jogo[x][y + k] == "🌊" for k in range(tamanho)):
+                        for k in range(tamanho):
+                            jogo[x][y + k] = navio
+                        colocado = True
+                else:
+                    if x + tamanho <= linhas and all(jogo[x + k][y] == "🌊" for k in range(tamanho)):
+                        for k in range(tamanho):
+                            jogo[x + k][y] = navio
+                        colocado = True
 
     def mostra_apostas():
         os.system("cls")
@@ -110,10 +123,12 @@ def jogar():
                 print(f" {apostas[i][j]} ", end="")
             print("\n")
 
-    def faz_aposta(num):
+    def faz_aposta(vez_jogador=None):
         while True:
             mostra_apostas()
-            posicao = input(f"{num}ª Coordenada (ex: A1, B7, J10): ").strip().upper()
+            if vez_jogador:
+                print(f"Vez do {vez_jogador}")
+            posicao = input("Coordenada de tiro (ex: A1, B7, J10): ").strip().upper()
             if len(posicao) < 2 or len(posicao) > 3 or not posicao[0].isalpha() or not posicao[1:].isdigit():
                 print("Informe no formato letra+número (A1 até J10)")
                 time.sleep(2)
@@ -122,7 +137,6 @@ def jogar():
             y = int(posicao[1:]) - 1
             try:
                 if apostas[x][y] == "🌊":
-                    apostas[x][y] = jogo[x][y]
                     break
                 else:
                     print("Coordenada já apostada. Tente outra")
@@ -132,53 +146,77 @@ def jogar():
                 time.sleep(2)
         return x, y
 
-    def verifica_tabuleiro():
-        faltam = 0
-        for i in range(linhas):
-            for j in range(colunas):
-                if apostas[i][j] == "🌊":
-                    faltam += 1
-        return faltam
+    total_setores_navio = sum(tamanho for _, tamanho in frota)
+    acertos_totais = 0
 
     preenche_matriz()
-    mostra_tabuleiro()
+    mostra_apostas()
+    print("A batalha começou! Escolha a primeira coordenada de tiro.")
+    time.sleep(1)
 
     tempo_inicial = time.time()
+    turno = 0
 
     while True:
-        x1, y1 = faz_aposta(1)
-        x2, y2 = faz_aposta(2)
+        indice_jogador = turno % 2
+        vez_jogador = jogadores[indice_jogador] if modo_dois_jogadores else None
+
+        if modo_dois_jogadores:
+            x, y = faz_aposta(vez_jogador)
+        else:
+            x, y = faz_aposta()
+
         mostra_apostas()
 
-        if apostas[x1][y1] == apostas[x2][y2]:
-            print("Você acertou 😀")
-            pontos += 10
-            contador = verifica_tabuleiro()
-            if contador == 0:
-                print("Parabéns! Você venceu! 🎉🎉")
+        if jogo[x][y] != "🌊":
+            apostas[x][y] = "💥"
+            print("Acertou um navio! 💥")
+            acertos_totais += 1
+            if modo_dois_jogadores:
+                pontos_jogadores[indice_jogador] += 10
+            else:
+                pontos += 10
+
+            setores_restantes = total_setores_navio - acertos_totais
+            if setores_restantes == 0:
+                print("Parabéns! Você afundou toda a frota inimiga! 🎉🎉")
                 break
             else:
-                print(f"Falta Descobrir: {contador // 2} bicho(s)")
+                print(f"Setores de navio restantes: {setores_restantes}")
             time.sleep(2)
         else:
-            print("Você Errou 🥺")
-            pontos -= 5
+            apostas[x][y] = "❌"
+            print("Tiro na água! ❌")
+            if modo_dois_jogadores:
+                pontos_jogadores[indice_jogador] -= 5
+            else:
+                pontos -= 5
             time.sleep(2)
-            apostas[x1][y1] = "🌊"
-            apostas[x2][y2] = "🌊"
-            continuar = input("Continuar (S/N): ").upper()
+            continuar = input("Continuar batalha (S/N): ").upper()
             if continuar == "N":
                 break
+
+        turno += 1
 
     tempo_final = time.time()
     duracao = int(tempo_final - tempo_inicial)
 
-    print(f"\n\nJogador: {jogador}")
-    print(f"Total de Pontos: {pontos}")
+    if modo_dois_jogadores:
+        print(f"\n\nPlayer1 ({jogadores[0]}): {pontos_jogadores[0]} pontos")
+        print(f"Player2 ({jogadores[1]}): {pontos_jogadores[1]} pontos")
+    else:
+        print(f"\n\nJogador: {jogador}")
+        print(f"Total de Pontos: {pontos}")
+
     print(f"Duração do Jogo: {duracao} segundos")
 
-    salvar_resultado(jogador, pontos, duracao)
-    mostrar_ranking(jogador, pontos, duracao)
+    if modo_dois_jogadores:
+        salvar_resultado(jogadores[0], pontos_jogadores[0], duracao)
+        salvar_resultado(jogadores[1], pontos_jogadores[1], duracao)
+        mostrar_ranking()
+    else:
+        salvar_resultado(jogador, pontos, duracao)
+        mostrar_ranking(jogador, pontos, duracao)
 
 def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None):
     dados = carregar_ranking()
@@ -202,10 +240,10 @@ def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None):
     ranking = sorted(ranking_valido, key=lambda x: (x[1], x[2] * -1), reverse=True)
 
     print()
-    print("=" * 43)
+    print(Fore.BLUE + "=" * 43 + Style.RESET_ALL)
     print(Fore.YELLOW + "---------< RANKING DOS JOGADORES >---------" + Style.RESET_ALL)
-    print("=" * 43)
-    print(Fore.CYAN + "Nº Nome do Jogador.........: Pontos Tempo.:" + Style.RESET_ALL)
+    print(Fore.BLUE + "=" * 43 + Style.RESET_ALL)
+    print(Fore.MAGENTA + "Nº Nome do Jogador.........: Pontos Tempo.:" + Style.RESET_ALL)
 
     if not ranking:
         print("Nenhum jogador no ranking ainda.")
