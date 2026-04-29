@@ -72,6 +72,8 @@ def jogar():
         jogador2 = input("Nome do Jogador 2: ").strip() or "Player2"
         jogadores = [jogador1, jogador2]
         pontos_jogadores = [0, 0]
+        acertos_jogadores = [0, 0]
+        erros_jogadores = [0, 0]
     else:
         return
 
@@ -163,10 +165,12 @@ def jogar():
             if tabuleiros_frota[defensor][x][y] != "🌊":
                 tabuleiros_tiros[atacante][x][y] = "💥"
                 acertos_em_cada_frota[defensor] += 1
-                pontos_jogadores[atacante] += 10
+                acertos_jogadores[atacante] += 1
+                pontos_jogadores[atacante] += 20
                 print(Fore.GREEN + "Acertou um navio inimigo! 💥" + Style.RESET_ALL)
             else:
                 tabuleiros_tiros[atacante][x][y] = "❌"
+                erros_jogadores[atacante] += 1
                 pontos_jogadores[atacante] -= 5
                 print(Fore.RED + "Tiro na água! ❌" + Style.RESET_ALL)
 
@@ -186,14 +190,18 @@ def jogar():
         print(f"Player2 ({jogadores[1]}): {pontos_jogadores[1]} pontos")
         print(f"Duração do Jogo: {duracao} segundos")
 
-        salvar_resultado(jogadores[0], pontos_jogadores[0], duracao)
-        salvar_resultado(jogadores[1], pontos_jogadores[1], duracao)
+        print(f"Acertos Player1: {acertos_jogadores[0]} | Erros Player1: {erros_jogadores[0]}")
+        print(f"Acertos Player2: {acertos_jogadores[1]} | Erros Player2: {erros_jogadores[1]}")
+
+        salvar_resultado(jogadores[0], pontos_jogadores[0], duracao, acertos_jogadores[0], erros_jogadores[0])
+        salvar_resultado(jogadores[1], pontos_jogadores[1], duracao, acertos_jogadores[1], erros_jogadores[1])
         mostrar_ranking()
     else:
         tabuleiro_frota = cria_tabuleiro_agua()
         tabuleiro_tiros = cria_tabuleiro_agua()
         pontos = 0
         acertos = 0
+        erros = 0
 
         posiciona_frota(tabuleiro_frota)
         mostra_tabuleiro_tiros(tabuleiro_tiros, "A batalha começou! Escolha a primeira coordenada de tiro.")
@@ -205,10 +213,11 @@ def jogar():
             if tabuleiro_frota[x][y] != "🌊":
                 tabuleiro_tiros[x][y] = "💥"
                 acertos += 1
-                pontos += 10
+                pontos += 20
                 print(Fore.GREEN + "Acertou um navio! 💥" + Style.RESET_ALL)
             else:
                 tabuleiro_tiros[x][y] = "❌"
+                erros += 1
                 pontos -= 5
                 print(Fore.RED + "Tiro na água! ❌" + Style.RESET_ALL)
 
@@ -227,29 +236,37 @@ def jogar():
         duracao = int(tempo_final - tempo_inicial)
         print(f"\n\nJogador: {jogador}")
         print(f"Total de Pontos: {pontos}")
+        print(f"Total de Acertos: {acertos}")
+        print(f"Total de Erros: {erros}")
         print(f"Duração do Jogo: {duracao} segundos")
 
-        salvar_resultado(jogador, pontos, duracao)
-        mostrar_ranking(jogador, pontos, duracao)
+        salvar_resultado(jogador, pontos, duracao, acertos, erros)
+        mostrar_ranking(jogador, pontos, duracao, acertos, erros)
 
-def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None):
+def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None, acertos_atual=None, erros_atual=None):
     dados = carregar_ranking()
     ranking_valido = []
     linhas_invalidas = 0
 
     for linha in dados:
         partes = linha.strip().split(";")
-        if len(partes) != 3:
+        if len(partes) not in (3, 5):
             linhas_invalidas += 1
             continue
         nome = partes[0].strip()
         try:
             pontos = int(partes[1])
             duracao = int(partes[2])
+            if len(partes) == 5:
+                acertos = int(partes[3])
+                erros = int(partes[4])
+            else:
+                acertos = 0
+                erros = 0
         except ValueError:
             linhas_invalidas += 1
             continue
-        ranking_valido.append((nome, pontos, duracao))
+        ranking_valido.append((nome, pontos, duracao, acertos, erros))
 
     ranking = sorted(ranking_valido, key=lambda x: (x[1], x[2] * -1), reverse=True)
 
@@ -257,17 +274,23 @@ def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None):
     print(Fore.BLUE + "=" * 43 + Style.RESET_ALL)
     print(Fore.YELLOW + "---------< RANKING DOS JOGADORES >---------" + Style.RESET_ALL)
     print(Fore.BLUE + "=" * 43 + Style.RESET_ALL)
-    print(Fore.MAGENTA + "Nº Nome do Jogador.........: Pontos Tempo.:" + Style.RESET_ALL)
+    print(Fore.MAGENTA + "Nº Nome do Jogador.........: Pontos Acertos Erros Tempo.:" + Style.RESET_ALL)
 
     if not ranking:
         print("Nenhum jogador no ranking ainda.")
         return
 
     posicao = 0
-    for nome, pontos, duracao in ranking:
+    for nome, pontos, duracao, acertos, erros in ranking:
         posicao += 1
-        texto = f"{posicao:2d} {nome:25s}   {pontos:2d}   {duracao:3d} seg"
-        if nome == jogador_atual and pontos == pontos_atual and duracao == duracao_atual:
+        texto = f"{posicao:2d} {nome:25s}   {pontos:2d}   {acertos:2d}   {erros:2d}   {duracao:3d} seg"
+        if (
+            nome == jogador_atual
+            and pontos == pontos_atual
+            and duracao == duracao_atual
+            and acertos == (acertos_atual or 0)
+            and erros == (erros_atual or 0)
+        ):
             print(Fore.RED + texto + Style.RESET_ALL)
         else:
             print(texto)
@@ -276,9 +299,9 @@ def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None):
         print(f"\nAviso: {linhas_invalidas} linha(s) inválida(s) no ranking foram ignoradas.")
 
 
-def salvar_resultado(jogador, pontos, duracao):
+def salvar_resultado(jogador, pontos, duracao, acertos=0, erros=0):
     with open("ranking.txt", "a", encoding="utf-8") as arq:
-        arq.write(f"{jogador};{pontos};{duracao}\n")
+        arq.write(f"{jogador};{pontos};{duracao};{acertos};{erros}\n")
 
 
 if __name__ == "__main__":
