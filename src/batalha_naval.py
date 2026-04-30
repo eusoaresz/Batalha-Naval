@@ -72,26 +72,19 @@ def jogar():
         jogador2 = input("Nome do Jogador 2: ").strip() or "Player2"
         jogadores = [jogador1, jogador2]
         pontos_jogadores = [0, 0]
+        acertos_jogadores = [0, 0]
+        erros_jogadores = [0, 0]
     else:
         return
-    
-    pontos = 0
+
     linhas = 10
     colunas = 10
     letras_linhas = "ABCDEFGHIJ"
 
-    jogo = []
-    apostas = []
+    def cria_tabuleiro_agua():
+        return [["🌊" for _ in range(colunas)] for _ in range(linhas)]
 
-    def preenche_matriz():
-        for i in range(linhas):
-            jogo.append([])
-            apostas.append([])
-            for _ in range(colunas):
-                jogo[i].append("🌊")
-                apostas[i].append("🌊")
-
-        # Garante navios horizontais e verticais no tabuleiro
+    def posiciona_frota(tabuleiro):
         orientacoes = ["H", "H", "V", "V"]
         random.shuffle(orientacoes)
 
@@ -104,138 +97,176 @@ def jogar():
                 y = random.randint(0, colunas - 1)
 
                 if orientacao == "H":
-                    if y + tamanho <= colunas and all(jogo[x][y + k] == "🌊" for k in range(tamanho)):
+                    if y + tamanho <= colunas and all(tabuleiro[x][y + k] == "🌊" for k in range(tamanho)):
                         for k in range(tamanho):
-                            jogo[x][y + k] = navio
+                            tabuleiro[x][y + k] = navio
                         colocado = True
                 else:
-                    if x + tamanho <= linhas and all(jogo[x + k][y] == "🌊" for k in range(tamanho)):
+                    if x + tamanho <= linhas and all(tabuleiro[x + k][y] == "🌊" for k in range(tamanho)):
                         for k in range(tamanho):
-                            jogo[x + k][y] = navio
+                            tabuleiro[x + k][y] = navio
                         colocado = True
 
-    def mostra_apostas():
+    def mostra_tabuleiro_tiros(tabuleiro_tiros, titulo=None):
         os.system("cls")
+        if titulo:
+            print(titulo)
+            print()
         print("   1   2   3   4   5   6   7   8   9  10")
         for i in range(linhas):
             print(letras_linhas[i], end="")
             for j in range(colunas):
-                print(f" {apostas[i][j]} ", end="")
+                print(f" {tabuleiro_tiros[i][j]} ", end="")
             print("\n")
 
-    def faz_aposta(vez_jogador=None):
+    def ler_coordenada(tabuleiro_tiros, nome_jogador=None):
         while True:
-            mostra_apostas()
-            if vez_jogador:
-                print(f"Vez do {vez_jogador}")
+            titulo = f"Vez de {nome_jogador} | Ataque a frota inimiga" if nome_jogador else "Ataque a frota inimiga"
+            mostra_tabuleiro_tiros(tabuleiro_tiros, titulo)
             posicao = input("Coordenada de tiro (ex: A1, B7, J10): ").strip().upper()
             if len(posicao) < 2 or len(posicao) > 3 or not posicao[0].isalpha() or not posicao[1:].isdigit():
                 print("Informe no formato letra+número (A1 até J10)")
-                time.sleep(2)
+                time.sleep(1.5)
                 continue
+
             x = ord(posicao[0]) - ord("A")
             y = int(posicao[1:]) - 1
-            try:
-                if apostas[x][y] == "🌊":
-                    break
-                else:
-                    print("Coordenada já apostada. Tente outra")
-                    time.sleep(2)
-            except IndexError:
-                print("Coordenada inválida. Repita")
-                time.sleep(2)
-        return x, y
+
+            if x < 0 or x >= linhas or y < 0 or y >= colunas:
+                print("Coordenada fora do tabuleiro. Repita.")
+                time.sleep(1.5)
+                continue
+
+            if tabuleiro_tiros[x][y] != "🌊":
+                print("Coordenada já utilizada. Tente outra.")
+                time.sleep(1.5)
+                continue
+
+            return x, y
 
     total_setores_navio = sum(tamanho for _, tamanho in frota)
-    acertos_totais = 0
-
-    preenche_matriz()
-    mostra_apostas()
-    print("A batalha começou! Escolha a primeira coordenada de tiro.")
-    time.sleep(1)
-
     tempo_inicial = time.time()
-    turno = 0
 
-    while True:
-        indice_jogador = turno % 2
-        vez_jogador = jogadores[indice_jogador] if modo_dois_jogadores else None
+    if modo_dois_jogadores:
+        tabuleiros_frota = [cria_tabuleiro_agua(), cria_tabuleiro_agua()]
+        tabuleiros_tiros = [cria_tabuleiro_agua(), cria_tabuleiro_agua()]
+        acertos_em_cada_frota = [0, 0]
 
-        if modo_dois_jogadores:
-            x, y = faz_aposta(vez_jogador)
-        else:
-            x, y = faz_aposta()
+        posiciona_frota(tabuleiros_frota[0])
+        posiciona_frota(tabuleiros_frota[1])
 
-        mostra_apostas()
+        turno = 0
+        while True:
+            atacante = turno % 2
+            defensor = 1 - atacante
 
-        if jogo[x][y] != "🌊":
-            apostas[x][y] = "💥"
-            print("Acertou um navio! 💥")
-            acertos_totais += 1
-            if modo_dois_jogadores:
-                pontos_jogadores[indice_jogador] += 10
+            x, y = ler_coordenada(tabuleiros_tiros[atacante], jogadores[atacante])
+
+            if tabuleiros_frota[defensor][x][y] != "🌊":
+                tabuleiros_tiros[atacante][x][y] = "💥"
+                acertos_em_cada_frota[defensor] += 1
+                acertos_jogadores[atacante] += 1
+                pontos_jogadores[atacante] += 20
+                print(Fore.GREEN + "Acertou um navio inimigo! 💥" + Style.RESET_ALL)
             else:
-                pontos += 10
+                tabuleiros_tiros[atacante][x][y] = "❌"
+                erros_jogadores[atacante] += 1
+                pontos_jogadores[atacante] -= 5
+                print(Fore.RED + "Tiro na água! ❌" + Style.RESET_ALL)
 
-            setores_restantes = total_setores_navio - acertos_totais
-            if setores_restantes == 0:
-                print("Parabéns! Você afundou toda a frota inimiga! 🎉🎉")
+            restantes = total_setores_navio - acertos_em_cada_frota[defensor]
+            print(f"Setores restantes da frota inimiga: {restantes}")
+
+            if acertos_em_cada_frota[defensor] == total_setores_navio:
+                print(f"\n{jogadores[atacante]} venceu a batalha! 🏆")
                 break
+
+            input("\nPressione Enter para passar o turno...")
+            turno += 1
+
+        tempo_final = time.time()
+        duracao = int(tempo_final - tempo_inicial)
+        print(f"\n\nPlayer1 ({jogadores[0]}): {pontos_jogadores[0]} pontos")
+        print(f"Player2 ({jogadores[1]}): {pontos_jogadores[1]} pontos")
+        print(f"Duração do Jogo: {duracao} segundos")
+
+        print(f"Acertos Player1: {acertos_jogadores[0]} | Erros Player1: {erros_jogadores[0]}")
+        print(f"Acertos Player2: {acertos_jogadores[1]} | Erros Player2: {erros_jogadores[1]}")
+
+        salvar_resultado(jogadores[0], pontos_jogadores[0], duracao, acertos_jogadores[0], erros_jogadores[0])
+        salvar_resultado(jogadores[1], pontos_jogadores[1], duracao, acertos_jogadores[1], erros_jogadores[1])
+        mostrar_ranking()
+    else:
+        tabuleiro_frota = cria_tabuleiro_agua()
+        tabuleiro_tiros = cria_tabuleiro_agua()
+        pontos = 0
+        acertos = 0
+        erros = 0
+
+        posiciona_frota(tabuleiro_frota)
+        mostra_tabuleiro_tiros(tabuleiro_tiros, "A batalha começou! Escolha a primeira coordenada de tiro.")
+        time.sleep(1)
+
+        while True:
+            x, y = ler_coordenada(tabuleiro_tiros)
+
+            if tabuleiro_frota[x][y] != "🌊":
+                tabuleiro_tiros[x][y] = "💥"
+                acertos += 1
+                pontos += 20
+                print(Fore.GREEN + "Acertou um navio! 💥" + Style.RESET_ALL)
             else:
-                print(f"Setores de navio restantes: {setores_restantes}")
-            time.sleep(2)
-        else:
-            apostas[x][y] = "❌"
-            print("Tiro na água! ❌")
-            if modo_dois_jogadores:
-                pontos_jogadores[indice_jogador] -= 5
-            else:
+                tabuleiro_tiros[x][y] = "❌"
+                erros += 1
                 pontos -= 5
-            time.sleep(2)
-            continuar = input("Continuar batalha (S/N): ").upper()
+                print(Fore.RED + "Tiro na água! ❌" + Style.RESET_ALL)
+
+            restantes = total_setores_navio - acertos
+            print(f"Setores de navio restantes: {restantes}")
+
+            if acertos == total_setores_navio:
+                print(Fore.YELLOW + "Parabéns! Você afundou toda a frota inimiga! 🎉🎉" + Style.RESET_ALL)
+                break
+
+            continuar = input("Continuar batalha (S/N): ").strip().upper()
             if continuar == "N":
                 break
 
-        turno += 1
-
-    tempo_final = time.time()
-    duracao = int(tempo_final - tempo_inicial)
-
-    if modo_dois_jogadores:
-        print(f"\n\nPlayer1 ({jogadores[0]}): {pontos_jogadores[0]} pontos")
-        print(f"Player2 ({jogadores[1]}): {pontos_jogadores[1]} pontos")
-    else:
+        tempo_final = time.time()
+        duracao = int(tempo_final - tempo_inicial)
         print(f"\n\nJogador: {jogador}")
         print(f"Total de Pontos: {pontos}")
+        print(f"Total de Acertos: {acertos}")
+        print(f"Total de Erros: {erros}")
+        print(f"Duração do Jogo: {duracao} segundos")
 
-    print(f"Duração do Jogo: {duracao} segundos")
+        salvar_resultado(jogador, pontos, duracao, acertos, erros)
+        mostrar_ranking(jogador, pontos, duracao, acertos, erros)
 
-    if modo_dois_jogadores:
-        salvar_resultado(jogadores[0], pontos_jogadores[0], duracao)
-        salvar_resultado(jogadores[1], pontos_jogadores[1], duracao)
-        mostrar_ranking()
-    else:
-        salvar_resultado(jogador, pontos, duracao)
-        mostrar_ranking(jogador, pontos, duracao)
-
-def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None):
+def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None, acertos_atual=None, erros_atual=None):
     dados = carregar_ranking()
     ranking_valido = []
     linhas_invalidas = 0
 
     for linha in dados:
         partes = linha.strip().split(";")
-        if len(partes) != 3:
+        if len(partes) not in (3, 5):
             linhas_invalidas += 1
             continue
         nome = partes[0].strip()
         try:
             pontos = int(partes[1])
             duracao = int(partes[2])
+            if len(partes) == 5:
+                acertos = int(partes[3])
+                erros = int(partes[4])
+            else:
+                acertos = 0
+                erros = 0
         except ValueError:
             linhas_invalidas += 1
             continue
-        ranking_valido.append((nome, pontos, duracao))
+        ranking_valido.append((nome, pontos, duracao, acertos, erros))
 
     ranking = sorted(ranking_valido, key=lambda x: (x[1], x[2] * -1), reverse=True)
 
@@ -243,17 +274,23 @@ def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None):
     print(Fore.BLUE + "=" * 43 + Style.RESET_ALL)
     print(Fore.YELLOW + "---------< RANKING DOS JOGADORES >---------" + Style.RESET_ALL)
     print(Fore.BLUE + "=" * 43 + Style.RESET_ALL)
-    print(Fore.MAGENTA + "Nº Nome do Jogador.........: Pontos Tempo.:" + Style.RESET_ALL)
+    print(Fore.MAGENTA + "Nº Nome do Jogador.........: Pontos Acertos Erros Tempo.:" + Style.RESET_ALL)
 
     if not ranking:
         print("Nenhum jogador no ranking ainda.")
         return
 
     posicao = 0
-    for nome, pontos, duracao in ranking:
+    for nome, pontos, duracao, acertos, erros in ranking:
         posicao += 1
-        texto = f"{posicao:2d} {nome:25s}   {pontos:2d}   {duracao:3d} seg"
-        if nome == jogador_atual and pontos == pontos_atual and duracao == duracao_atual:
+        texto = f"{posicao:2d} {nome:25s}   {pontos:2d}   {acertos:2d}   {erros:2d}   {duracao:3d} seg"
+        if (
+            nome == jogador_atual
+            and pontos == pontos_atual
+            and duracao == duracao_atual
+            and acertos == (acertos_atual or 0)
+            and erros == (erros_atual or 0)
+        ):
             print(Fore.RED + texto + Style.RESET_ALL)
         else:
             print(texto)
@@ -262,9 +299,9 @@ def mostrar_ranking(jogador_atual=None, pontos_atual=None, duracao_atual=None):
         print(f"\nAviso: {linhas_invalidas} linha(s) inválida(s) no ranking foram ignoradas.")
 
 
-def salvar_resultado(jogador, pontos, duracao):
+def salvar_resultado(jogador, pontos, duracao, acertos=0, erros=0):
     with open("ranking.txt", "a", encoding="utf-8") as arq:
-        arq.write(f"{jogador};{pontos};{duracao}\n")
+        arq.write(f"{jogador};{pontos};{duracao};{acertos};{erros}\n")
 
 
 if __name__ == "__main__":
