@@ -3,10 +3,8 @@ import time
 import os
 from colorama import Fore, Style, just_fix_windows_console
 
-# Habilita suporte a cores ANSI no console Windows (PowerShell/VS Code Terminal)
 just_fix_windows_console()
 
-# Frota com tamanho real de cada navio (1, 2, 3 e 4 casas)
 frota = [("🛥️", 1), ("⛴️", 2), ("🛳️", 3), ("🚢", 4)]
 
 def carregar_ranking():
@@ -179,6 +177,10 @@ def jogar():
 
             if acertos_em_cada_frota[defensor] == total_setores_navio:
                 print(f"\n{jogadores[atacante]} venceu a batalha! 🏆")
+                break
+
+            continuar = input("Continuar batalha (S/N): ").strip().upper()
+            if continuar == "N":
                 break
 
             input("\nPressione Enter para passar o turno...")
